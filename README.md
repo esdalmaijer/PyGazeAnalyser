@@ -1,7 +1,7 @@
 [PyGaze - the open-source toolbox for eye tracking](http://www.pygaze.org/)
 ===========================================================================
 
-[PyGazeAnalyzer](http://www.pygaze.org/projects/pygazeanalyser/)
+[PyGazeAnalyser](http://www.pygaze.org/projects/pygazeanalyser/)
 --------------
 
 version 0.1.0 (01-03-2014)
