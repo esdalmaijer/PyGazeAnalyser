@@ -24,12 +24,12 @@
 # research, e.g. heatmaps, scanpaths, and fixation locations as overlays of
 # images.
 #
-# version 1 (01 Mar 2014)
+# version 2 (02 Jul 2014)
 
 __author__ = "Edwin Dalmaijer"
 
 # native
-import os.path
+import os
 # external
 import numpy
 import matplotlib
@@ -126,9 +126,9 @@ def draw_fixations(fixations, dispsize, imagefile=None, durationsize=True, durat
 	# CIRCLES
 	# duration weigths
 	if durationsize:
-		siz = fix['dur']
+		siz = 100 * (fix['dur']/30.0)
 	else:
-		siz = int(dispsize[0] / 100)
+		siz = 100 * numpy.median(fix['dur']/30.0)
 	if durationcolour:
 		col = fix['dur']
 	else:
@@ -137,15 +137,11 @@ def draw_fixations(fixations, dispsize, imagefile=None, durationsize=True, durat
 	ax.scatter(fix['x'],fix['y'], s=siz, c=col, marker='o', cmap='jet', alpha=alpha, edgecolors='none')
 
 	# FINISH PLOT
-	# set the axis to the display size
-	ax.axis([0,dispsize[0],0,dispsize[1]])
-	# remove the axis grid
-	ax.axis('off')
 	# invert the y axis, as (0,0) is top left on a display
 	ax.invert_yaxis()
 	# save the figure if a file name was provided
 	if savefilename != None:
-		pyplot.savefig(savefilename)
+		fig.savefig(savefilename)
 	
 	return fig
 
@@ -234,15 +230,11 @@ def draw_heatmap(fixations, dispsize, imagefile=None, durationweight=True, alpha
 	ax.imshow(heatmap, cmap='jet', alpha=alpha)
 
 	# FINISH PLOT
-	# set the axis to the display size
-	ax.axis([0,dispsize[0],0,dispsize[1]])
-	# remove the axis grid
-	ax.axis('off')
 	# invert the y axis, as (0,0) is top left on a display
 	ax.invert_yaxis()
 	# save the figure if a file name was provided
 	if savefilename != None:
-		pyplot.savefig(savefilename)
+		fig.savefig(savefilename)
 	
 	return fig
 
@@ -282,15 +274,11 @@ def draw_raw(x, y, dispsize, imagefile=None, savefilename=None):
 	# plot raw data points
 	ax.plot(x, y, 'o', color=COLS['aluminium'][0], markeredgecolor=COLS['aluminium'][5])
 
-	# set the axis to the display size
-	ax.axis([0,dispsize[0],0,dispsize[1]])
-	# remove the axis grid
-	ax.axis('off')
 	# invert the y axis, as (0,0) is top left on a display
 	ax.invert_yaxis()
 	# save the figure if a file name was provided
 	if savefilename != None:
-		pyplot.savefig(savefilename)
+		fig.savefig(savefilename)
 	
 	return fig
 
@@ -349,15 +337,11 @@ def draw_scanpath(fixations, saccades, dispsize, imagefile=None, alpha=0.5, save
 			# draw an arrow between every saccade start and ending
 			ax.arrow(sx, sy, ex-sx, ey-sy, alpha=alpha, fc=COLS['aluminium'][0], ec=COLS['aluminium'][5], fill=True, shape='full', width=10, head_width=20, head_starts_at_zero=False, overhang=0)
 
-	# set the axis to the display size
-	ax.axis([0,dispsize[0],0,dispsize[1]])
-	# remove the axis grid
-	ax.axis('off')
 	# invert the y axis, as (0,0) is top left on a display
 	ax.invert_yaxis()
 	# save the figure if a file name was provided
 	if savefilename != None:
-		pyplot.savefig(savefilename)
+		fig.savefig(savefilename)
 	
 	return fig
 
@@ -401,7 +385,10 @@ def draw_display(dispsize, imagefile=None):
 		# load image
 		img = image.imread(imagefile)
 		# flip image over the horizontal axis
-		img = numpy.flipud(img)
+		# (do not do so on Windows, as the image appears to be loaded with
+		# the correct side up there; what's up with that? :/)
+		if not os.name == 'nt':
+			img = numpy.flipud(img)
 		# width and height of the image
 		w, h = len(img[0]), len(img)
 		# x and y position of the image on the display
@@ -409,10 +396,18 @@ def draw_display(dispsize, imagefile=None):
 		y = dispsize[1]/2 - h/2
 		# draw the image on the screen
 		screen[y:y+h,x:x+w,:] += img
+	# dots per inch
+	dpi = 100.0
+	# determine the figure size in inches
+	figsize = (dispsize[0]/dpi, dispsize[1]/dpi)
+	# create a figure
+	fig = pyplot.figure(figsize=figsize, dpi=dpi, frameon=False)
+	ax = pyplot.Axes(fig, [0,0,1,1])
+	ax.set_axis_off()
+	fig.add_axes(ax)
 	# plot display
-	imgplot = pyplot.imshow(screen, origin='upper')
-	fig = imgplot.get_figure()
-	ax =  imgplot.get_axes()
+	ax.axis([0,dispsize[0],0,dispsize[1]])
+	ax.imshow(screen)#, origin='upper')
 	
 	return fig, ax
 
