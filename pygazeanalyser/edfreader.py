@@ -1,23 +1,3 @@
-# -*- coding: utf-8 -*-
-#
-# This file is part of PyGaze - the open-source toolbox for eye tracking
-#
-#	PyGazeAnalyser is a Python module for easily analysing eye-tracking data
-#	Copyright (C) 2014  Edwin S. Dalmaijer
-#
-#	This program is free software: you can redistribute it and/or modify
-#	it under the terms of the GNU General Public License as published by
-#	the Free Software Foundation, either version 3 of the License, or
-#	(at your option) any later version.
-#
-#	This program is distributed in the hope that it will be useful,
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#	GNU General Public License for more details.
-#
-#	You should have received a copy of the GNU General Public License
-#	along with this program.  If not, see <http://www.gnu.org/licenses/>
-
 # EDF Reader
 #
 # Does not actually read EDFs directly, but the ASC files that are produced
@@ -27,13 +7,11 @@
 # Nystrom, M., & Holmqvist, K. (2010). An adaptive algorithm for fixation,
 # saccade, and glissade detection in eyetracking data. Behavior Research
 # Methods, 42, 188-204. doi:10.3758/BRM.42.1.188
-# (slight note: by 'glissade', they actually meant 'post-saccadic oscillation',
-# not 'glissade')
 #
-# (C) Edwin Dalmaijer, 2013
+# (C) Edwin Dalmaijer, 2013-2014
 # edwin.dalmaijer@gmail.com
 #
-# version 1 (13-Nov-2013)
+# version 2 (24-Apr-2014)
 
 __author__ = "Edwin Dalmaijer"
 
@@ -52,7 +30,7 @@ def replace_missing(value, missing=0.0):
 	only, NOT for pupil size, as missing pupil size data is coded '0.0'
 	
 	arguments
-	value			-	either an X or a Y gaze position value (NOT pupil
+	value		-	either an X or a Y gaze position value (NOT pupil
 					size! This is coded '0.0')
 	
 	keyword arguments
@@ -60,7 +38,7 @@ def replace_missing(value, missing=0.0):
 					(default = 0.0)
 	
 	returns
-	value			-	either a missing code, or a float value of the
+	value		-	either a missing code, or a float value of the
 					gaze position
 	"""
 	
@@ -89,19 +67,19 @@ def read_edf(filename, start, stop=None, missing=0.0, debug=False):
 						NOTE: timing is in EDF time!
 	
 	arguments
-	filename	-	path to the file that has to be read
+	filename		-	path to the file that has to be read
 	start		-	trial start string
 	
 	keyword arguments
-	stop		-	trial ending string (default = None)
-	missing	-	value to be used for missing data (default = 0.0)
+	stop			-	trial ending string (default = None)
+	missing		-	value to be used for missing data (default = 0.0)
 	debug		-	Boolean indicating if DEBUG mode should be on or off;
 				if DEBUG mode is on, information on what the script
 				currently is doing will be printed to the console
 				(default = False)
 	
 	returns
-	data		-	a list with a dict for every trial (see above)
+	data			-	a list with a dict for every trial (see above)
 	"""
 
 	# # # # #
@@ -150,6 +128,7 @@ def read_edf(filename, start, stop=None, missing=0.0, debug=False):
 	starttime = 0
 	started = False
 	trialend = False
+	finalline = raw[-1]
 	
 	# loop through all lines
 	for line in raw:
@@ -163,7 +142,7 @@ def read_edf(filename, start, stop=None, missing=0.0, debug=False):
 					trialend = True
 			# check for new start otherwise
 			else:
-				if start in line:
+				if (start in line) or (line == finalline):
 					started = True
 					trialend = True
 			
@@ -301,3 +280,35 @@ def read_edf(filename, start, stop=None, missing=0.0, debug=False):
 	# return
 	
 	return data
+
+
+# DEBUG #
+if __name__ == "__main__":
+	# start: MSG	3120773 TRIALNR 8 TARX 662 TARY 643 DISX 771 DISY 233 CSTPE 0 REINFORCE 0
+	# stop: MSG	3118572 TRIALNR END 7
+	data = read_edf('1.asc', "TRIALNR", stop="TRIALNR END", debug=False)
+	
+	x = numpy.zeros(len(data[0]['x'])*1.5)
+	y = numpy.zeros(len(data[0]['y'])*1.5)
+	size = y = numpy.zeros(len(data[0]['size'])*1.5)
+	
+	for i in range(len(data)):
+		x[:len(data[i]['x'])] = x[:len(data[i]['x'])] + data[i]['x']
+		y[:len(data[i]['y'])] = y[:len(data[i]['y'])] + data[i]['y']
+		y[:len(data[i]['size'])] = y[:len(data[i]['size'])] + data[i]['size']
+	x = x/len(data)
+	y = y/len(data)
+	size = size/len(data)
+	
+	from matplotlib import pyplot
+	pyplot.figure()
+	pyplot.plot(data[0]['time'],data[0]['x'],'r')
+	pyplot.plot(data[0]['time'],data[0]['y'],'g')
+	pyplot.plot(data[0]['time'],data[0]['size'],'b')
+	
+	pyplot.figure()
+	pyplot.plot(size,'b')
+	
+	pyplot.figure()
+	pyplot.plot(x,y,'ko')
+# # # # #
