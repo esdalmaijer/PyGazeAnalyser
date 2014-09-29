@@ -43,129 +43,7 @@ import os.path
 
 import numpy
 
-
-def blink_detection(x, y, time, missing=0.0, minlen=10):
-	
-	"""Detects blinks, defined as a period of missing data that lasts for at
-	least a minimal amount of samples
-	
-	arguments
-
-	x		-	numpy array of x positions
-	y		-	numpy array of y positions
-	time		-	numpy array of EyeTribe timestamps
-
-	keyword arguments
-
-	missing	-	value to be used for missing data (default = 0.0)
-	minlen	-	integer indicating the minimal amount of consecutive
-				missing samples
-	
-	returns
-	Sblk, Eblk
-				Sblk	-	list of lists, each containing [starttime]
-				Eblk	-	list of lists, each containing [starttime, endtime, duration]
-	"""
-	
-	# empty list to contain data
-	Sblk = []
-	Eblk = []
-	
-	# check where the missing samples are
-	mx = numpy.array(x==missing, dtype=int)
-	my = numpy.array(y==missing, dtype=int)
-	miss = numpy.array((mx+my) == 2, dtype=int)
-	
-	# check where the starts and ends are (+1 to counteract shift to left)
-	diff = numpy.diff(miss)
-	starts = numpy.where(diff==1)[0] + 1
-	ends = numpy.where(diff==-1)[0] + 1
-	
-	# compile blink starts and ends
-	for i in range(len(starts)):
-		# get starting index
-		s = starts[i]
-		# get ending index
-		if i < len(ends):
-			e = ends[i]
-		else:
-			e = ends[-1]
-		# append only if the duration in samples is equal to or greater than
-		# the minimal duration
-		if e-s >= minlen:
-			# add starting time
-			Sblk.append([time[s]])
-			# add ending time
-			Eblk.append([time[s],time[e],time[e]-time[s]])
-	
-	return Sblk, Eblk
-
-
-def fixation_detection(x, y, time, missing=0.0, maxdist=40):
-	
-	"""Detects fixations, defined as consecutive samples with an inter-sample
-	distance of less than a set amount of pixels (disregarding missing data)
-	
-	arguments
-
-	x		-	numpy array of x positions
-	y		-	numpy array of y positions
-	time		-	numpy array of EyeTribe timestamps
-
-	keyword arguments
-
-	missing	-	value to be used for missing data (default = 0.0)
-	maxdist	-	maximal inter sample distance in pixels (default = 40)
-	
-	returns
-	Sfix, Efix
-				Sfix	-	list of lists, each containing [starttime]
-				Efix	-	list of lists, each containing [starttime, endtime, duration, endx, endy]
-	"""
-	
-	# empty list to contain data
-	Sfix = []
-	Efix = []
-	
-	# calculate horizontal and vertical distances
-	hdist = numpy.diff(x)
-	vdist = numpy.diff(y)
-	
-	# calculate the Euclidean distance between samples
-	intdist = (hdist**2 + vdist**2)**0.5
-	
-	# check which inter-sample distances are too large
-	toofast = numpy.array(intdist>maxdist, dtype=int)
-	
-	# check where the starts and ends are (+1 to counteract shift to left)
-	diff = numpy.diff(toofast)
-	starts = numpy.where(diff==-1)[0] + 1
-	ends = numpy.where(diff==1)[0] + 1
-	
-	# check if a fixation started before the current slice
-	if starts[0] >= ends[0]:
-		starts = numpy.insert(starts, 0, 0)
-	
-	# compile fixation starts and ends
-	for i in range(len(starts)):
-		# get starting index
-		s = starts[i]
-		# get ending index
-		if i < len(ends):
-			e = ends[i]
-		else:
-			e = ends[-1]
-		# get the ending coordinates
-		ex = x[e]
-		ey = y[e]
-		# only append the fixation data if the coordinate is not missing data
-		if ex != missing and ey != missing:
-			# add starting data
-			Sfix.append([time[s]])
-			# add ending data
-			Efix.append([time[s],time[e],time[e]-time[s],ex,ey])
-	
-	return Sfix, Efix
+from detectors import blink_detection, fixation_detection, saccade_detection
 
 
 def read_eyetribe(filename, start, stop=None, missing=0.0, debug=False):
@@ -288,6 +166,7 @@ def read_eyetribe(filename, start, stop=None, missing=0.0, debug=False):
 				# events
 				trial['events']['Sblk'], trial['events']['Eblk'] = blink_detection(trial['x'],trial['y'],trial['trackertime'],missing=missing)
 				trial['events']['Sfix'], trial['events']['Efix'] = fixation_detection(trial['x'],trial['y'],trial['trackertime'],missing=missing)
+				trial['events']['Ssac'], trial['events']['Esac'] = saccade_detection(trial['x'],trial['y'],trial['trackertime'],missing=missing)
 				# add trial to data
 				data.append(trial)
 				# reset stuff
