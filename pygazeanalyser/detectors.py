@@ -38,7 +38,10 @@
 __author__ = "Edwin Dalmaijer"
 
 import numpy
+from scipy.interpolate import interp1d
 
+REPLACE_MISSINGS = 1
+INTERPOLATE_MISSINGS = 2
 
 def blink_detection(x, y, time, missing=0.0, minlen=10):
 
@@ -100,7 +103,8 @@ def blink_detection(x, y, time, missing=0.0, minlen=10):
     return Sblk, Eblk
 
 
-def fixation_detection(x, y, time, missing=0.0, maxdist=25, mindur=50):
+def fixation_detection(x, y, time, missing=0.0, maxdist=25, mindur=50,
+                                handle_missings=None):
 
     """Detects fixations, defined as consecutive samples with an inter-sample
     distance of less than a set amount of pixels (disregarding missing data)
@@ -119,12 +123,24 @@ def fixation_detection(x, y, time, missing=0.0, maxdist=25, mindur=50):
                 fixation cadidates will be disregarded if they are below
                 this duration (default = 100)
 
+    handle_missings -  method to handle missing
+                    if `REPLACE_MISSINGS`, missings will be replaced with the
+                        previous sample
+                    if `INTERPOLATE_MISSINGS`, missings will be interpolated
+
     returns
     Sfix, Efix
           Sfix    -    list of lists, each containing [starttime]
           Efix    -    list of lists, each containing [starttime,
                                             endtime, duration, endx, endy]
     """
+
+    if handle_missings > 0:
+        interpolate = handle_missings==INTERPOLATE_MISSINGS
+        x = replace_missings(data = x, missing = missing,
+                interpolate = interpolate)
+        y = replace_missings(data = y, missing = missing,
+                    interpolate = interpolate)
 
     # empty list to contain data
     Sfix = []
@@ -160,7 +176,8 @@ def fixation_detection(x, y, time, missing=0.0, maxdist=25, mindur=50):
     return Sfix, Efix
 
 
-def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40, maxacc=340):
+def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40,
+                    maxacc=340, handle_missings=None):
 
     """Detects saccades, defined as consecutive samples with an inter-sample
     velocity of over a velocity threshold or an acceleration threshold
@@ -180,6 +197,11 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40, maxacc=340):
     maxvel    -    velocity threshold in pixels/second (default = 40)
     maxacc    -    acceleration threshold in pixels / second**2
                 (default = 340)
+    handle_missings -  method to handle missing
+                    if `REPLACE_MISSINGS`, missings will be replaced with the
+                        previous sample
+                    if `INTERPOLATE_MISSINGS`, missings will be interpolated
+
 
     returns
     Ssac, Esac
@@ -187,6 +209,14 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40, maxacc=340):
             Esac    -    list of lists, each containing [starttime, endtime,
                                         duration, startx, starty, endx, endy]
     """
+
+    if handle_missings > 0:
+        interpolate = handle_missings==INTERPOLATE_MISSINGS
+        x = replace_missings(data = x, missing = missing,
+                interpolate = interpolate)
+        y = replace_missings(data = y, missing = missing,
+                    interpolate = interpolate)
+
 
     # CONTAINERS
     Ssac = []
@@ -229,7 +259,7 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40, maxacc=340):
             Ssac.append([t1])
 
             # detect saccade endings
-            sacends = numpy.where((vel[1+t1i:] < maxvel) & \
+            sacends = numpy.where((vel[1+t1i:] < maxvel) &
                                   (acc[t1i:] < maxacc))[0]
             if len(sacends) > 0:
                 # timestamp for ending position
@@ -255,3 +285,48 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40, maxacc=340):
             stop = True
 
     return Ssac, Esac
+
+
+def interpolate_missings(data, missing):
+    """Interpolate missing values, if first sample is a missing
+    it will be replace by numpy.nan
+
+    returns: numpy.array(dtype=float)
+
+    """
+
+    data = numpy.array(data, dtype=float)
+    data[data == missing] = numpy.nan
+
+    idx = numpy.arange(data.shape[0])
+    not_nan = numpy.where(numpy.isfinite(data))
+    f = interp1d(idx[not_nan], data[not_nan],bounds_error=False)
+    rtn = numpy.where(numpy.isfinite(data),data,f(idx))
+
+    return rtn
+
+def replace_missings(data, missing, interpolate=False):
+    """Replaces missing values with previous sample,
+    if first sample is a missing it will be replace by numpy.nan
+
+    if interpolation is true, value will be replace by interpolations
+
+    returns: numpy.array(dtype=float)
+
+    """
+
+    if interpolate:
+       return interpolate_missings(data, missing)
+
+    data = numpy.array(data, dtype=float)
+
+    if data[0]==missing:
+        data[0] = numpy.nan
+
+    while True:
+        idx = numpy.where(data == missing)[0]
+        if len(idx) == 0:
+            break
+        data[idx] = data[idx-1]
+
+    return data
