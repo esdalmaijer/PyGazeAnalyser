@@ -41,10 +41,10 @@ import numpy
 
 
 def blink_detection(x, y, time, missing=0.0, minlen=10):
-	
+
 	"""Detects blinks, defined as a period of missing data that lasts for at
 	least a minimal amount of samples
-	
+
 	arguments
 
 	x		-	numpy array of x positions
@@ -56,27 +56,28 @@ def blink_detection(x, y, time, missing=0.0, minlen=10):
 	missing	-	value to be used for missing data (default = 0.0)
 	minlen	-	integer indicating the minimal amount of consecutive
 				missing samples
-	
+
 	returns
 	Sblk, Eblk
 				Sblk	-	list of lists, each containing [starttime]
-				Eblk	-	list of lists, each containing [starttime, endtime, duration]
+				Eblk	-	list of lists, each containing [starttime, 
+                                                    endtime, duration]
 	"""
-	
+
 	# empty list to contain data
 	Sblk = []
 	Eblk = []
-	
+
 	# check where the missing samples are
 	mx = numpy.array(x==missing, dtype=int)
 	my = numpy.array(y==missing, dtype=int)
 	miss = numpy.array((mx+my) == 2, dtype=int)
-	
+
 	# check where the starts and ends are (+1 to counteract shift to left)
 	diff = numpy.diff(miss)
 	starts = numpy.where(diff==1)[0] + 1
 	ends = numpy.where(diff==-1)[0] + 1
-	
+
 	# compile blink starts and ends
 	for i in range(len(starts)):
 		# get starting index
@@ -95,15 +96,15 @@ def blink_detection(x, y, time, missing=0.0, minlen=10):
 			Sblk.append([time[s]])
 			# add ending time
 			Eblk.append([time[s],time[e],time[e]-time[s]])
-	
+
 	return Sblk, Eblk
 
 
 def fixation_detection(x, y, time, missing=0.0, maxdist=25, mindur=50):
-	
+
 	"""Detects fixations, defined as consecutive samples with an inter-sample
 	distance of less than a set amount of pixels (disregarding missing data)
-	
+
 	arguments
 
 	x		-	numpy array of x positions
@@ -117,17 +118,18 @@ def fixation_detection(x, y, time, missing=0.0, maxdist=25, mindur=50):
 	mindur	-	minimal duration of a fixation in milliseconds; detected
 				fixation cadidates will be disregarded if they are below
 				this duration (default = 100)
-	
+
 	returns
 	Sfix, Efix
 				Sfix	-	list of lists, each containing [starttime]
-				Efix	-	list of lists, each containing [starttime, endtime, duration, endx, endy]
+				Efix	-	list of lists, each containing [starttime,
+                                                     endtime, duration, endx, endy]
 	"""
-	
+
 	# empty list to contain data
 	Sfix = []
 	Efix = []
-	
+
 	# loop through all coordinates
 	si = 0
 	fixstart = False
@@ -153,15 +155,15 @@ def fixation_detection(x, y, time, missing=0.0, maxdist=25, mindur=50):
 			si = 0 + i
 		elif not fixstart:
 			si += 1
-	
+
 	return Sfix, Efix
 
 
 def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40, maxacc=340):
-	
+
 	"""Detects saccades, defined as consecutive samples with an inter-sample
 	velocity of over a velocity threshold or an acceleration threshold
-	
+
 	arguments
 
 	x		-	numpy array of x positions
@@ -177,13 +179,14 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40, maxacc=340):
 	maxvel	-	velocity threshold in pixels/second (default = 40)
 	maxacc	-	acceleration threshold in pixels / second**2
 				(default = 340)
-	
+
 	returns
 	Ssac, Esac
 			Ssac	-	list of lists, each containing [starttime]
-			Esac	-	list of lists, each containing [starttime, endtime, duration, startx, starty, endx, endy]
+			Esac	-	list of lists, each containing [starttime, endtime,
+                                        duration, startx, starty, endx, endy]
 	"""
-	
+
 	# CONTAINERS
 	Ssac = []
 	Esac = []
@@ -191,12 +194,10 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40, maxacc=340):
 	# INTER-SAMPLE MEASURES
 	# the distance between samples is the square root of the sum
 	# of the squared horizontal and vertical interdistances
-	intdist = (numpy.diff(x)**2 + numpy.diff(y)**2)**0.5
-	# get inter-sample times
-	inttime = numpy.diff(time)
-	# recalculate inter-sample times to seconds
-	inttime = inttime / 1000.0
-	
+	intdist = numpy.hypot(numpy.diff(x), numpy.diff(y))
+        # get inter-sample times in seconds
+	inttime = numpy.diff(time) / 1000.0
+
 	# VELOCITY AND ACCELERATION
 	# the velocity between samples is the inter-sample distance
 	# divided by the inter-sample time
@@ -212,21 +213,21 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40, maxacc=340):
 		# saccade start (t1) is when the velocity or acceleration
 		# surpass threshold, saccade end (t2) is when both return
 		# under threshold
-	
+
 		# detect saccade starts
-		sacstarts = numpy.where((vel[1+t0i:] > maxvel).astype(int) + (acc[t0i:] > maxacc).astype(int) >= 1)[0]
+		sacstarts = numpy.where((vel[1+t0i:] > maxvel) | (acc[t0i:] > maxacc))[0]
 		if len(sacstarts) > 0:
 			# timestamp for starting position
 			t1i = t0i + sacstarts[0] + 1
 			if t1i >= len(time)-1:
 				t1i = len(time)-2
 			t1 = time[t1i]
-			
+
 			# add to saccade starts
 			Ssac.append([t1])
-			
+
 			# detect saccade endings
-			sacends = numpy.where((vel[1+t1i:] < maxvel).astype(int) + (acc[t1i:] < maxacc).astype(int) == 2)[0]
+			sacends = numpy.where((vel[1+t1i:] < maxvel) & (acc[t1i:] < maxacc))[0]
 			if len(sacends) > 0:
 				# timestamp for ending position
 				t2i = sacends[0] + 1 + t1i + 2
@@ -249,5 +250,5 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40, maxacc=340):
 				stop = True
 		else:
 			stop = True
-	
+
 	return Ssac, Esac
