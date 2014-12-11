@@ -123,7 +123,7 @@ def fixation_detection(x, y, time, missing=0.0, maxdist=25, mindur=50,
                 fixation cadidates will be disregarded if they are below
                 this duration (default = 100)
 
-    handle_missings -  method to handle missing
+    handle_missings -  method to handle missings
                     if `REPLACE_MISSINGS`, missings will be replaced with the
                         previous sample
                     if `INTERPOLATE_MISSINGS`, missings will be interpolated
@@ -197,7 +197,7 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40,
     maxvel    -    velocity threshold in pixels/second (default = 40)
     maxacc    -    acceleration threshold in pixels / second**2
                 (default = 340)
-    handle_missings -  method to handle missing
+    handle_missings -  method to handle missings
                     if `REPLACE_MISSINGS`, missings will be replaced with the
                         previous sample
                     if `INTERPOLATE_MISSINGS`, missings will be interpolated
@@ -288,8 +288,8 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40,
 
 
 def interpolate_missings(data, missing):
-    """Interpolate missing values, if first sample is a missing
-    it will be replace by numpy.nan
+    """Interpolate missing values
+    If the first sample is a missing, it will be replaced by numpy.nan.
 
     returns: numpy.array(dtype=float)
 
@@ -306,10 +306,9 @@ def interpolate_missings(data, missing):
     return rtn
 
 def replace_missings(data, missing, interpolate=False):
-    """Replaces missing values with previous sample,
-    if first sample is a missing it will be replace by numpy.nan
-
-    if interpolation is true, value will be replace by interpolations
+    """Replaces missing values with previous sample.
+    If the first sample is a missing, it will be replaced by numpy.nan.
+    If interpolation is true, values will be replaced by interpolated data.
 
     returns: numpy.array(dtype=float)
 
