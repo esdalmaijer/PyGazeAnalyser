@@ -143,6 +143,7 @@ def draw_fixations(fixations, dispsize, imagefile=None, durationsize=True, durat
 	if savefilename != None:
 		fig.savefig(savefilename)
 	
+        pyplot.close()
 	return fig
 
 
@@ -236,7 +237,8 @@ def draw_heatmap(fixations, dispsize, imagefile=None, durationweight=True, alpha
 	if savefilename != None:
 		fig.savefig(savefilename)
 	
-	return fig
+	pyplot.close()
+        return fig
 
 
 def draw_raw(x, y, dispsize, imagefile=None, savefilename=None):
@@ -280,7 +282,8 @@ def draw_raw(x, y, dispsize, imagefile=None, savefilename=None):
 	if savefilename != None:
 		fig.savefig(savefilename)
 	
-	return fig
+	pyplot.close()
+        return fig
 
 
 def draw_scanpath(fixations, saccades, dispsize, imagefile=None, alpha=0.5, savefilename=None):
@@ -343,7 +346,8 @@ def draw_scanpath(fixations, saccades, dispsize, imagefile=None, alpha=0.5, save
 	if savefilename != None:
 		fig.savefig(savefilename)
 	
-	return fig
+	pyplot.close()
+        return fig
 
 
 # # # # #
