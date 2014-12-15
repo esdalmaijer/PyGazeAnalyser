@@ -37,8 +37,9 @@
 
 __author__ = "Edwin Dalmaijer"
 
-import numpy
+import numpy as np
 from scipy.interpolate import interp1d
+from scipy.stats import nanmean
 
 REPLACE_MISSINGS = 1
 INTERPOLATE_MISSINGS = 2
@@ -50,9 +51,9 @@ def blink_detection(x, y, time, missing=0.0, minlen=10):
 
     arguments
 
-    x        -    numpy array of x positions
-    y        -    numpy array of y positions
-    time     -    numpy array of EyeTribe timestamps
+    x        -    np array of x positions
+    y        -    np array of y positions
+    time     -    np array of EyeTribe timestamps
 
     keyword arguments
 
@@ -72,14 +73,14 @@ def blink_detection(x, y, time, missing=0.0, minlen=10):
     Eblk = []
 
     # check where the missing samples are
-    mx = numpy.array(x==missing, dtype=int)
-    my = numpy.array(y==missing, dtype=int)
-    miss = numpy.array((mx+my) == 2, dtype=int)
+    mx = np.array(x==missing, dtype=int)
+    my = np.array(y==missing, dtype=int)
+    miss = np.array((mx+my) == 2, dtype=int)
 
     # check where the starts and ends are (+1 to counteract shift to left)
-    diff = numpy.diff(miss)
-    starts = numpy.where(diff==1)[0] + 1
-    ends = numpy.where(diff==-1)[0] + 1
+    diff = np.diff(miss)
+    starts = np.where(diff==1)[0] + 1
+    ends = np.where(diff==-1)[0] + 1
 
     # compile blink starts and ends
     for i in range(len(starts)):
@@ -111,9 +112,9 @@ def fixation_detection(x, y, time, missing=0.0, maxdist=25, mindur=50,
 
     arguments
 
-    x        -    numpy array of x positions
-    y        -    numpy array of y positions
-    time        -    numpy array of EyeTribe timestamps
+    x        -    np array of x positions
+    y        -    np array of y positions
+    time        -    np array of EyeTribe timestamps
 
     keyword arguments
 
@@ -184,9 +185,9 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40,
 
     arguments
 
-    x        -    numpy array of x positions
-    y        -    numpy array of y positions
-    time        -    numpy array of tracker timestamps in milliseconds
+    x        -    np array of x positions
+    y        -    np array of y positions
+    time        -    np array of tracker timestamps in milliseconds
 
     keyword arguments
 
@@ -225,9 +226,9 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40,
     # INTER-SAMPLE MEASURES
     # the distance between samples is the square root of the sum
     # of the squared horizontal and vertical interdistances
-    intdist = numpy.hypot(numpy.diff(x), numpy.diff(y))
+    intdist = np.hypot(np.diff(x), np.diff(y))
         # get inter-sample times in seconds
-    inttime = numpy.diff(time) / 1000.0
+    inttime = np.diff(time) / 1000.0
 
     # VELOCITY AND ACCELERATION
     # the velocity between samples is the inter-sample distance
@@ -235,7 +236,7 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40,
     vel = intdist / inttime
     # the acceleration is the sample-to-sample difference in
     # eye movement velocity
-    acc = numpy.diff(vel)
+    acc = np.diff(vel)
 
     # SACCADE START AND END
     t0i = 0
@@ -246,7 +247,7 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40,
         # under threshold
 
         # detect saccade starts
-        sacstarts = numpy.where((vel[1+t0i:] > maxvel) |
+        sacstarts = np.where((vel[1+t0i:] > maxvel) |
                                 (acc[t0i:] > maxacc))[0]
         if len(sacstarts) > 0:
             # timestamp for starting position
@@ -259,7 +260,7 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40,
             Ssac.append([t1])
 
             # detect saccade endings
-            sacends = numpy.where((vel[1+t1i:] < maxvel) &
+            sacends = np.where((vel[1+t1i:] < maxvel) &
                                   (acc[t1i:] < maxacc))[0]
             if len(sacends) > 0:
                 # timestamp for ending position
@@ -287,43 +288,83 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40,
     return Ssac, Esac
 
 
+
+def EK_microsaccade_detection(x,y,times, minimum_duration=12):
+    """Engbert & Kliegl (2003) microsaccades detection algorithm
+    http://www.sciencedirect.com/science/article/pii/S0042698903000841#
+
+    (monocular detection only)
+    """
+
+    xy = np.transpose([x,y])
+    dt = float(np.median(np.diff(times)))
+    # moving average (5 samples) of velocity vectors
+    vn = (np.roll(xy, -2, axis=0) + np.roll(xy, -1, axis=0) - \
+         np.roll(xy, 1, axis=0)  - np.roll(xy, 2, axis=0)) / (6 * dt)
+    vn[:2,:] = np.nan
+    vn[-2:,:] = np.nan
+    # criteria
+    sigma = np.median(vn**2, axis=0) - np.median(vn, axis=0)**2
+    eta = 6* sigma
+    # find movements
+    # Esac start, stop, duration, xstart, ystart, xend, yend
+    Esac = []
+    is_moving = False
+    for c, m in enumerate(np.sum(vn > eta, axis=1) >0):
+        if m:
+            if not is_moving:
+                Esac.append([times[c], np.nan, np.nan, xy[c,0], xy[c,1], np.nan, np.nan])
+                is_moving = True
+        else:
+            if is_moving:
+                Esac[-1][1] = times[c]
+                Esac[-1][5] = xy[c,0]
+                Esac[-1][6] = xy[c,1]
+                is_moving = False
+    Esac = np.array(Esac)
+    Esac[:,2] =  Esac[:,1] - Esac[:,0] # duration
+    # min samples 12 msec
+    idx = np.where(Esac[:,2] >= minimum_duration)[0]
+    Esac = Esac[idx, :]
+    return Esac
+
 def interpolate_missings(data, missing):
     """Interpolate missing values
-    If the first sample is a missing, it will be replaced by numpy.nan.
+    If the first sample is a missing, it will be replaced by np.nan.
 
-    returns: numpy.array(dtype=float)
+    returns: np.array(dtype=float)
 
     """
 
-    data = numpy.array(data, dtype=float)
-    data[data == missing] = numpy.nan
+    data = np.array(data, dtype=float)
+    data[data == missing] = np.nan
 
-    idx = numpy.arange(data.shape[0])
-    not_nan = numpy.where(numpy.isfinite(data))
+    idx = np.arange(data.shape[0])
+    not_nan = np.where(np.isfinite(data))
     f = interp1d(idx[not_nan], data[not_nan],bounds_error=False)
-    rtn = numpy.where(numpy.isfinite(data),data,f(idx))
+    rtn = np.where(np.isfinite(data),data,f(idx))
 
     return rtn
 
 def replace_missings(data, missing, interpolate=False):
     """Replaces missing values with previous sample.
-    If the first sample is a missing, it will be replaced by numpy.nan.
+    If the first sample is a missing, it will be replaced by np.nan.
     If interpolation is true, values will be replaced by interpolated data.
 
-    returns: numpy.array(dtype=float)
+    returns: np.array(dtype=float)
 
     """
 
     if interpolate:
        return interpolate_missings(data, missing)
 
-    data = numpy.array(data, dtype=float)
+    data = np.array(data, dtype=float)
 
     if data[0]==missing:
-        data[0] = numpy.nan
+        data[0] = np.nan
 
     while True:
-        idx = numpy.where(data == missing)[0]
+        idx = np.where(data == missing)[0]
         if len(idx) == 0:
             break
         data[idx] = data[idx-1]
