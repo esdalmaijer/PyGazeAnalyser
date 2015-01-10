@@ -217,7 +217,11 @@ def draw_heatmap(fixations, dispsize, imagefile=None, durationweight=True, alpha
 			elif dispsize[1] < y:
 				vadj[1] = gwh - int(y-dispsize[1])
 			# add adjusted Gaussian to the current heatmap
-			heatmap[y:y+vadj[1],x:x+hadj[1]] += gaus[vadj[0]:vadj[1],hadj[0]:hadj[1]] * fix['dur'][i]
+			try:
+				heatmap[y:y+vadj[1],x:x+hadj[1]] += gaus[vadj[0]:vadj[1],hadj[0]:hadj[1]] * fix['dur'][i]
+			except:
+				# fixation was probably outside of display
+				pass
 		else:				
 			# add Gaussian to the current heatmap
 			heatmap[y:y+gwh,x:x+gwh] += gaus * fix['dur'][i]

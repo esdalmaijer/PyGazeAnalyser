@@ -55,7 +55,7 @@ def read_edf(filename, start, stop=None, missing=0.0, debug=False):
 		y		-	numpy array of y positions
 		size		-	numpy array of pupil size
 		time		-	numpy array of timestamps, t=0 at trialstart
-		edftime	-	numpy array of timestamps, according to EDF
+		trackertime	-	numpy array of timestamps, according to EDF
 		events	-	dict with the following keys:
 						Sfix	-	list of lists, each containing [starttime]
 						Ssac	-	list of lists, each containing [starttime]
@@ -123,7 +123,7 @@ def read_edf(filename, start, stop=None, missing=0.0, debug=False):
 	y = []
 	size = []
 	time = []
-	edftime = []
+	trackertime = []
 	events = {'Sfix':[],'Ssac':[],'Sblk':[],'Efix':[],'Esac':[],'Eblk':[],'msg':[]}
 	starttime = 0
 	started = False
@@ -157,7 +157,7 @@ def read_edf(filename, start, stop=None, missing=0.0, debug=False):
 				trial['y'] = numpy.array(y)
 				trial['size'] = numpy.array(size)
 				trial['time'] = numpy.array(time)
-				trial['edftime'] = numpy.array(edftime)
+				trial['trackertime'] = numpy.array(trackertime)
 				trial['events'] = copy.deepcopy(events)
 				# add trial to data
 				data.append(trial)
@@ -166,7 +166,7 @@ def read_edf(filename, start, stop=None, missing=0.0, debug=False):
 				y = []
 				size = []
 				time = []
-				edftime = []
+				trackertime = []
 				events = {'Sfix':[],'Ssac':[],'Sblk':[],'Efix':[],'Esac':[],'Eblk':[],'msg':[]}
 				trialend = False
 				
@@ -273,7 +273,7 @@ def read_edf(filename, start, stop=None, missing=0.0, debug=False):
 				y.append(float(l[2]))
 				size.append(float(l[3]))
 				time.append(int(l[0])-starttime)
-				edftime.append(int(l[0]))
+				trackertime.append(int(l[0]))
 	
 	
 	# # # # #
