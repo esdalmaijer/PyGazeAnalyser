@@ -212,7 +212,6 @@ def read_idf(filename, start, stop=None, missing=0.0, debug=False):
 		# check if the current line contains start message
 		else:
 			if line[typei] == "MSG":
-				print start, line[msgi], start in line[msgi]
 				if start in line[msgi]:
 					message("trialstart %d" % len(data))
 					# set started to True
