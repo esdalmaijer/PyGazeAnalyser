@@ -310,7 +310,8 @@ def EK_microsaccade_detection(x,y,times, minimum_duration=12):
     # Esac start, stop, duration, xstart, ystart, xend, yend
     Esac = []
     is_moving = False
-    for c, m in enumerate(np.sum(vn > eta, axis=1) >0):
+    movement = np.sum(vn > eta, axis=1) >0 # TODO unclear, seperate xy (as now) or vector sum)
+    for c, m in enumerate(movement):
         if m:
             if not is_moving:
                 Esac.append([times[c], np.nan, np.nan, xy[c,0], xy[c,1], np.nan, np.nan])
