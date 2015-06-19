@@ -243,7 +243,7 @@ def read_edf(filename, start, stop=None, missing=0.0, debug=False):
 				st = int(l[0])
 				et = int(l[1])
 				dur = int(l[2])
-				events['Sblk'].append([st,et,dur])
+				events['Eblk'].append([st,et,dur])
 			
 			# regular lines will contain tab separated values, beginning with
 			# a timestamp, follwed by the values that were asked to be stored
