@@ -227,6 +227,9 @@ def draw_heatmap(fixations, dispsize, imagefile=None, durationweight=True, alpha
 			heatmap[y:y+gwh,x:x+gwh] += gaus * fix['dur'][i]
 	# resize heatmap
 	heatmap = heatmap[strt:dispsize[1]+strt,strt:dispsize[0]+strt]
+        
+        retheatmap = numpy.copy(heatmap)
+        
 	# remove zeros
 	lowbound = numpy.mean(heatmap[heatmap>0])
 	heatmap[heatmap<lowbound] = numpy.NaN
@@ -240,7 +243,7 @@ def draw_heatmap(fixations, dispsize, imagefile=None, durationweight=True, alpha
 	if savefilename != None:
 		fig.savefig(savefilename)
 	
-	return fig
+	return (fig, retheatmap)
 
 
 def draw_raw(x, y, dispsize, imagefile=None, savefilename=None):
