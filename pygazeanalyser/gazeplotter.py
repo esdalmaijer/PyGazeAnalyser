@@ -391,7 +391,9 @@ def draw_display(dispsize, imagefile=None):
 		# flip image over the horizontal axis
 		# (do not do so on Windows, as the image appears to be loaded with
 		# the correct side up there; what's up with that? :/)
-		if not os.name == 'nt':
+                # (In Linux, the image is also loaded with the correct side up,
+                # so there's no need to flip it)
+		if not (os.name == 'nt' or os.name == 'posix'):
 			img = numpy.flipud(img)
 		# width and height of the image
 		w, h = len(img[0]), len(img)
