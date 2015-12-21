@@ -136,7 +136,7 @@ def read_edf(filename, start, stop=None, missing=0.0, debug=False):
 		# check if trial has already started
 		if started:
 			# only check for stop if there is one
-			if stop != None:
+			if stop is not None:
 				if stop in line:
 					started = False
 					trialend = True
@@ -144,7 +144,7 @@ def read_edf(filename, start, stop=None, missing=0.0, debug=False):
 			else:
 				if (start in line) or (line == finalline):
 					started = True
-					trialend = True
+					trialend = False
 			
 			# # # # #
 			# trial ending
