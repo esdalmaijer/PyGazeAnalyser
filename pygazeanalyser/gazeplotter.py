@@ -126,9 +126,9 @@ def draw_fixations(fixations, dispsize, imagefile=None, durationsize=True, durat
 	# CIRCLES
 	# duration weigths
 	if durationsize:
-		siz = 100 * (fix['dur']/30.0)
+		siz = 1 * (fix['dur']/30.0)
 	else:
-		siz = 100 * numpy.median(fix['dur']/30.0)
+		siz = 1 * numpy.median(fix['dur']/30.0)
 	if durationcolour:
 		col = fix['dur']
 	else:
@@ -200,8 +200,9 @@ def draw_heatmap(fixations, dispsize, imagefile=None, durationweight=True, alpha
 	# create heatmap
 	for i in range(0,len(fix['dur'])):
 		# get x and y coordinates
-		x = strt + fix['x'][i] - int(gwh/2)
-		y = strt + fix['y'][i] - int(gwh/2)
+		#x and y - indexes of heatmap array. must be integers
+		x = strt + int(fix['x'][i]) - int(gwh/2)
+		y = strt + int(fix['y'][i]) - int(gwh/2)
 		# correct Gaussian size if either coordinate falls outside of
 		# display boundaries
 		if (not 0 < x < dispsize[0]) or (not 0 < y < dispsize[1]):
@@ -329,7 +330,7 @@ def draw_scanpath(fixations, saccades, dispsize, imagefile=None, alpha=0.5, save
 	# parse fixations
 	fix = parse_fixations(fixations)
 	# draw fixations
-	ax.scatter(fix['x'],fix['y'], s=fix['dur'], c=COLS['chameleon'][2], marker='o', cmap='jet', alpha=alpha, edgecolors='none')
+	ax.scatter(fix['x'],fix['y'], s=(1 * fix['dur'] / 30.0), c=COLS['chameleon'][2], marker='o', cmap='jet', alpha=alpha, edgecolors='none')
 	# draw annotations (fixation numbers)
 	for i in range(len(fixations)):
 		ax.annotate(str(i+1), (fix['x'][i],fix['y'][i]), color=COLS['aluminium'][5], alpha=1, horizontalalignment='center', verticalalignment='center', multialignment='center')
@@ -380,7 +381,10 @@ def draw_display(dispsize, imagefile=None):
 	"""
 	
 	# construct screen (black background)
-	screen = numpy.zeros((dispsize[1],dispsize[0],3), dtype='uint8')
+	_, ext = os.path.splitext(imagefile)
+	ext = ext.lower()
+	data_type = 'float32' if ext == '.png' else 'uint8'
+	screen = numpy.zeros((dispsize[1],dispsize[0],3), dtype=data_type)
 	# if an image location has been passed, draw the image
 	if imagefile != None:
 		# check if the path to the image exists
