@@ -228,6 +228,9 @@ def draw_heatmap(fixations, dispsize, imagefile=None, durationweight=True, alpha
 			heatmap[y:y+gwh,x:x+gwh] += gaus * fix['dur'][i]
 	# resize heatmap
 	heatmap = heatmap[strt:dispsize[1]+strt,strt:dispsize[0]+strt]
+        
+        retheatmap = numpy.copy(heatmap)
+        
 	# remove zeros
 	lowbound = numpy.mean(heatmap[heatmap>0])
 	heatmap[heatmap<lowbound] = numpy.NaN
@@ -241,7 +244,7 @@ def draw_heatmap(fixations, dispsize, imagefile=None, durationweight=True, alpha
 	if savefilename != None:
 		fig.savefig(savefilename)
 	
-	return fig
+	return (fig, retheatmap)
 
 
 def draw_raw(x, y, dispsize, imagefile=None, savefilename=None):
@@ -395,7 +398,9 @@ def draw_display(dispsize, imagefile=None):
 		# flip image over the horizontal axis
 		# (do not do so on Windows, as the image appears to be loaded with
 		# the correct side up there; what's up with that? :/)
-		if not os.name == 'nt':
+                # (In Linux, the image is also loaded with the correct side up,
+                # so there's no need to flip it)
+		if not (os.name == 'nt' or os.name == 'posix'):
 			img = numpy.flipud(img)
 		# width and height of the image
 		w, h = len(img[0]), len(img)
