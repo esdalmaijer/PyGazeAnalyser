@@ -199,11 +199,13 @@ def read_edf(filename, start, stop=None, missing=0.0, debug=False):
 			# fixation start
 			elif line[0:4] == "SFIX":
 				message("fixation start")
+				eye = line[5] # detect which eye 08/24/2022 by Han
 				l = line[9:]
-				events['Sfix'].append(int(l))
+				events['Sfix'].append([eye,int(l)])
 			# fixation end
 			elif line[0:4] == "EFIX":
 				message("fixation end")
+				eye = line[5] # detect which eye 08/24/2022 by Han
 				l = line[9:]
 				l = l.split('\t')
 				st = int(l[0]) # starting time
@@ -211,15 +213,17 @@ def read_edf(filename, start, stop=None, missing=0.0, debug=False):
 				dur = int(l[2]) # duration
 				sx = replace_missing(l[3], missing=missing) # x position
 				sy = replace_missing(l[4], missing=missing) # y position
-				events['Efix'].append([st, et, dur, sx, sy])
+				events['Efix'].append([eye, st, et, dur, sx, sy])
 			# saccade start
 			elif line[0:5] == 'SSACC':
 				message("saccade start")
+				eye = line[6] # detect which eye 08/24/2022 by Han
 				l = line[9:]
-				events['Ssac'].append(int(l))
+				events['Ssac'].append([eye,int(l)])
 			# saccade end
 			elif line[0:5] == "ESACC":
 				message("saccade end")
+				eye = line[6] # detect which eye 08/24/2022 by Han
 				l = line[9:]
 				l = l.split('\t')
 				st = int(l[0]) # starting time
@@ -229,21 +233,23 @@ def read_edf(filename, start, stop=None, missing=0.0, debug=False):
 				sy = replace_missing(l[4], missing=missing) # start y position
 				ex = replace_missing(l[5], missing=missing) # end x position
 				ey = replace_missing(l[6], missing=missing) # end y position
-				events['Esac'].append([st, et, dur, sx, sy, ex, ey])
+				events['Esac'].append([eye, st, et, dur, sx, sy, ex, ey])
 			# blink start
 			elif line[0:6] == "SBLINK":
 				message("blink start")
+				eye = line[7] # detect which eye 08/24/2022 by Han
 				l = line[9:]
-				events['Sblk'].append(int(l))
+				events['Sblk'].append([eye, int(l)])
 			# blink end
 			elif line[0:6] == "EBLINK":
 				message("blink end")
+				eye = line[7] # detect which eye 08/24/2022 by Han
 				l = line[9:]
 				l = l.split('\t')
 				st = int(l[0])
 				et = int(l[1])
 				dur = int(l[2])
-				events['Eblk'].append([st,et,dur])
+				events['Eblk'].append([eye, st,et,dur])
 			
 			# regular lines will contain tab separated values, beginning with
 			# a timestamp, follwed by the values that were asked to be stored
